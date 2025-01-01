@@ -6,12 +6,11 @@
 import os
 
 import numpy as np
-import torch.utils
 import torch.utils.data
 from PIL import Image
 from torchvision import datasets, transforms
 
-from dataProcess.sampling import iid_sampling, non_iid_dirichlet_sampling
+from system.dataProcess.sampling import iid_sampling, non_iid_dirichlet_sampling
 
 
 def get_dataset(args):
@@ -91,7 +90,7 @@ def get_dataset(args):
         y_train = np.array(dataset_train.targets)
 
     elif args.dataset == 'clothing1m':
-        data_path = os.path.abspath('..') + '/data/clothing1M/'
+        data_path = os.path.abspath('../..') + '/data/clothing1M/'
         args.num_classes = 14
         args.model = 'resnet50'
         trans_train = transforms.Compose([

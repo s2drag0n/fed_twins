@@ -12,14 +12,14 @@ from sklearn.mixture import GaussianMixture
 from torch import nn
 from torch.utils.data import Subset
 
-from correction.correction import lid_term
-from dataProcess.load_data import load_data_with_noisy_label
-from model.bulid_model import build_model
-from trainning.aggration import personalized_aggregation
-from trainning.fscore import cal_f_score
-from trainning.get_output import get_output
-from trainning.local_training import FedTwinLocalUpdate
-from trainning.test import global_test
+from system.correction.correction import lid_term
+from system.dataProcess.load_data import load_data_with_noisy_label
+from system.model.bulid_model import build_model
+from system.trainning.aggration import personalized_aggregation
+from system.trainning.fscore import cal_f_score
+from system.trainning.get_output import get_output
+from system.trainning.local_training import FedTwinLocalUpdate
+from system.trainning.test import global_test
 
 
 def fed_twins(args):

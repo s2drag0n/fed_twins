@@ -6,8 +6,8 @@
 
 import numpy as np
 
-from dataProcess.add_noise import add_noise
-from dataProcess.dataset import get_dataset
+from system.dataProcess.add_noise import add_noise
+from system.dataProcess.dataset import get_dataset
 
 
 def load_data_with_noisy_label(args):

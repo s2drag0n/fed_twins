@@ -3,11 +3,9 @@
 # @Author       : Song Zilong
 # @Software     : PyCharm
 # @Description  : 为实验初始化模型
-from torch import nn
 
-from model import ResNet
-from model.LeNet import LeNet
-import torchvision
+from system.model import ResNet
+from system.model.LeNet import LeNet
 
 
 def build_model(args):

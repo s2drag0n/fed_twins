@@ -6,8 +6,8 @@
 import torch
 from torch.utils.data import DataLoader
 
-from trainning.local_training import DatasetSplit
-from trainning.optimizer import filter_noisy_data
+from system.trainning.local_training import DatasetSplit
+from system.trainning.optimizer import filter_noisy_data
 
 
 def cal_f_score(args, net, dataset_train, y_train, idxs):

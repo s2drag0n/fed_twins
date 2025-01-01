@@ -8,8 +8,7 @@ import random
 import numpy as np
 import torch
 
-from utils.arg_paser import args_parser
-from algorithms.fed_twins import fed_twins
+from system.utils.arg_paser import args_parser
 
 
 def run(arguments):

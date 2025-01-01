@@ -40,7 +40,7 @@ def args_parser():
     parser.add_argument('--begin_sel', type=float, default=10, help="which rounds to begin select clean samples")
     parser.add_argument('--max_beta', type=float, default=2,
                         help="beta for coresloss，2 for mnist/cifar10,  20 for cifar100, 2.8 for clothing1M")
-    parser.add_argument('--correction', type=bool, default=False, help="if use correction in fed_twins")
+    parser.add_argument('--correction', action='store_true', help="if use correction in fed_twins")
     parser.add_argument('--correction_begin_round', type=int, default=50, help="which round start correction")
     # FedCorr
     parser.add_argument('--LID_k', type=int, default=20, help="lid")
