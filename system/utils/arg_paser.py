@@ -8,7 +8,7 @@ import argparse
 
 def args_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-algo', "--algorithm", type=str, default="FedTwin")
+    parser.add_argument('-algo', "--algorithm", type=str, default="fed_twins")
     parser.add_argument('--gpu', type=int, default=0, help="GPU ID, -1 for CPU")
 
     # federated common arguments
@@ -42,6 +42,7 @@ def args_parser():
                         help="beta for coresloss，2 for mnist/cifar10,  20 for cifar100, 2.8 for clothing1M")
     parser.add_argument('--correction', action='store_true', help="if use correction in fed_twins")
     parser.add_argument('--correction_begin_round', type=int, default=50, help="which round start correction")
+    parser.add_argument('--pre_correction_begin_round', type=int, default=50, help="which round start correction")
     # FedCorr
     parser.add_argument('--LID_k', type=int, default=20, help="lid")
     parser.add_argument('--iteration1', type=int, default=5, help="enumerate iteration in preprocessing stage")

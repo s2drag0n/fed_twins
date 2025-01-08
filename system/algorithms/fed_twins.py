@@ -58,7 +58,7 @@ def fed_twins(args):
             n_bar.append(n_bar_k)
 
             # label correction part
-            if args.correction and rnd >= args.correction_begin_round:
+            if args.correction and rnd >= args.pre_correction_begin_round:
                 sample_idx = np.array(list(dict_users[idx]))
                 dataset_client = Subset(dataset_train, sample_idx)
                 loader = torch.utils.data.DataLoader(dataset=dataset_client, batch_size=100, shuffle=False)

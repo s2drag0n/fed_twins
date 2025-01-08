@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from system.utils.arg_paser import args_parser
+from system.algorithms.fed_twins import fed_twins
 
 
 def run(arguments):
