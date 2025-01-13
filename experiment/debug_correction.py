@@ -7,8 +7,8 @@ level_b = 0.5
 gpu_num = 0
 begin_sel_r = 10
 rounds2 = 300
-pre_correction_begin_round = 50
-correction_begin_round = 100
+pre_correction_begin_round = 10
+correction_begin_round = 200
 
 os.chdir("../")
 
@@ -17,7 +17,7 @@ profile_cmd = (
     f"python main.py "
     f"--alg fed_twins "
     f"--dataset cifar10 "
-    f"--model lenet "
+    f"--model resnet18 "
     f"--rounds2 {rounds2} "
     f"--lr 0.1 "
     f"--plr 0.1 "
@@ -29,6 +29,7 @@ profile_cmd = (
     f"--level_n_lowerb {level_b} "
     f"--correction "
     f"--pre_correction_begin_round {pre_correction_begin_round} "
-    f"--correction_begin_round {correction_begin_round} > experiment/result/cifar_10_1_05.txt 2>&1"
+    f"--correction_begin_round {correction_begin_round} > experiment/result/cifar_1_05.txt 2>&1"
 )
+
 subprocess.run(profile_cmd, shell=True)
