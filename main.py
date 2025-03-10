@@ -10,6 +10,9 @@ import torch
 
 from system.utils.arg_paser import args_parser
 from system.algorithms.fed_twins import fed_twins
+from system.algorithms.fed_avg import fed_avg
+from system.algorithms.fed_avg_loss_static import fed_avg_loss_static
+from system.algorithms.centralized_learning import centralized_learning
 
 
 def run(arguments):

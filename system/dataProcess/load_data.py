@@ -10,8 +10,7 @@ from system.dataProcess.add_noise import add_noise
 from system.dataProcess.dataset import get_dataset
 
 
-def load_data_with_noisy_label(args):
-    dataset_train, dataset_test, dict_users = get_dataset(args)
+def load_data_with_noisy_label(args, dataset_train, dataset_test, dict_users):
     # ---------------------Add Noise ---------------------------
     if args.dataset == 'clothing1m':
         y_train_noisy = np.array(dataset_train.targets)

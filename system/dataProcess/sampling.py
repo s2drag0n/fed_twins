@@ -20,15 +20,27 @@ def iid_sampling(n_train, num_users, seed):
     return dict_users
 
 
-def non_iid_dirichlet_sampling(y_train, num_classes, p, num_users, seed, alpha_dirichlet=100):
+def non_iid_dirichlet_sampling(y_train, num_classes, prob, num_users, seed, alpha_dirichlet=100):
     np.random.seed(seed)
-    phi = np.random.binomial(1, p, size=(num_users, num_classes))  # indicate the classes chosen by each client
+    phi = np.random.binomial(1, prob, size=(num_users, num_classes))  # indicate the classes chosen by each client
     n_classes_per_client = np.sum(phi, axis=1)
     while np.min(n_classes_per_client) == 0:
         invalid_idx = np.where(n_classes_per_client == 0)[0]
-        phi[invalid_idx] = np.random.binomial(1, p, size=(len(invalid_idx), num_classes))
+        phi[invalid_idx] = np.random.binomial(1, prob, size=(len(invalid_idx), num_classes))
         n_classes_per_client = np.sum(phi, axis=1)
     psi = [list(np.where(phi[:, j] == 1)[0]) for j in range(num_classes)]  # indicate the clients that choose each class
+
+    # 确保每个类别至少被一个客户端选择
+    n_clients_per_class = np.sum(phi, axis=0)
+    while np.min(n_clients_per_class) == 0:
+        invalid_classes = np.where(n_clients_per_class == 0)[0]
+        for class_j in invalid_classes:
+            client_k = np.random.randint(num_users)
+            phi[client_k, class_j] = 1
+        n_clients_per_class = np.sum(phi, axis=0)
+
+    psi = [list(np.where(phi[:, j] == 1)[0]) for j in range(num_classes)]  # 每个类别对应的客户端列表
+
     num_clients_per_class = np.array([len(x) for x in psi])
     dict_users: dict[Any, set[Any]] = {}
     for class_i in range(num_classes):

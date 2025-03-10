@@ -22,6 +22,7 @@ def args_parser():
     parser.add_argument('--local_bs', type=int, default=32, help="local batch size: B")
     parser.add_argument('--lr', type=float, default=0.1, help="learning rate")  # 0.01
     parser.add_argument('--model', type=str, default='lenet', help="model name")
+    parser.add_argument('--cl', action='store_true', help="centralized learning or fl")
 
     # noise arguments
     parser.add_argument('--num_classes', type=int, default=10, help="number of classes")
@@ -43,6 +44,12 @@ def args_parser():
     parser.add_argument('--correction', action='store_true', help="if use correction in fed_twins")
     parser.add_argument('--correction_begin_round', type=int, default=50, help="which round start correction")
     parser.add_argument('--pre_correction_begin_round', type=int, default=50, help="which round start correction")
+    parser.add_argument('--noise_prior_open', action='store_true', help="if use noise_prior")
+    # 消融实验
+    parser.add_argument('--nocr', action='store_true', help="if use noise_prior")
+    parser.add_argument('--nodr', action='store_true', help="if use noise_prior")
+    parser.add_argument('--fedavgcr', action='store_true', help="if use noise_prior")
+
     # FedCorr
     parser.add_argument('--LID_k', type=int, default=20, help="lid")
     parser.add_argument('--iteration1', type=int, default=5, help="enumerate iteration in preprocessing stage")
@@ -80,5 +87,7 @@ def args_parser():
     parser.add_argument('--mu', type=float, default=0.01, help='proximal term constant')
 
     parser.add_argument('--unsupervised', action='store_true')
+
+
     return parser.parse_args()
 

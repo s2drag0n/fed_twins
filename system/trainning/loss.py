@@ -29,6 +29,7 @@ class CORESLoss(CrossEntropyLoss):
     def forward(self, input, target, beta=0, noise_prior=None):
         loss = f.cross_entropy(input, target, reduction=self.reduction)
         loss_ = -torch.log(f.softmax(input, dim=1) + 1e-8)
+        noise_prior = noise_prior
         if noise_prior is None:
             loss = loss - beta * torch.mean(loss_, 1)  # CORESLoss
         else:
@@ -49,8 +50,10 @@ class FedTwinCRLoss(CrossEntropyLoss):
         self.label_smoothing = label_smoothing
         self.reduction = reduction
 
+
     def forward(self, target, input_p=None, input_g=None, rounds=0, epoch=0, args=None, noise_prior=None):
         cores_loss = CORESLoss(reduction='none')
+
         beta = f_beta(rounds * args.local_ep + epoch, args)
         ind_noise_p = []
         ind_noise_g = []
@@ -81,6 +84,7 @@ class FedTwinCRLoss(CrossEntropyLoss):
             loss_g_update_noise = cores_loss(input_g[ind_noise_p], target_p, beta, noise_prior)
             loss_p_update_noise = cores_loss(input_p[ind_noise_g], target_g, beta, noise_prior)
 
+            # 关键
             loss_p_update = cores_loss(input_p[ind_g_update], target[ind_g_update], beta, noise_prior)
             loss_g_update = cores_loss(input_g[ind_p_update], target[ind_p_update], beta, noise_prior)
 

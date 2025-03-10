@@ -17,6 +17,7 @@ def get_output(loader, net, args, latent=False, criterion=None):
             images = images.to(args.device)
             labels = labels.to(args.device)
             labels = labels.long()
+            # 判断是否需要归一化
             if not latent:
                 outputs, _ = net(images)
                 outputs = f.softmax(outputs, dim=1)

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/experiment/fl_vs_cl/result/cifar10_algorithm_centralized_learning_hete_level_0_iid_True_sample_ratio_0.7_cl_True_description_" charset="ISO-8859-1" />
+    <file url="file://$PROJECT_DIR$/system/algorithms/fed_avg.py" charset="UTF-8" />
+  </component>
+</project>

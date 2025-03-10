@@ -4,6 +4,10 @@
 # @Software     : PyCharm
 # @Description  : 各种算法的本地训练阶段
 import torch
+from sympy.ntheory import count_digits
+from torch.nn import CrossEntropyLoss
+import torch.nn.functional as f
+from torch.nn.functional import cross_entropy
 from torch.utils.data import DataLoader, Dataset
 
 from system.trainning.loss import FedTwinCRLoss, CORESLoss
@@ -24,10 +28,25 @@ class DatasetSplit(Dataset):
         return image, label, self.idxs[item]
 
 
+def count_digit(input_list):
+    # 初始化一个长度为10的列表，用于存储0-9每个数字的出现次数
+    count = [0] * 10
+
+    # 遍历数组，统计每个数字的出现次数
+    for num in input_list:
+        if 0 <= num <= 9:  # 确保数字在0-9范围内
+            count[num] += 1
+    count = [x / len(input_list) for x in count]
+    return count
+
+
 class FedTwinLocalUpdate:
     def __init__(self, args, dataset, idxs, client_idx):
         self.persionalized_model_bar = None
+        self.dataset = dataset
+        self.idxs = idxs
         self.args = args
+        self.noise_prior = torch.tensor(count_digit([self.dataset.targets[x] for x in self.idxs])).to(args.device)
         self.loss_func = FedTwinCRLoss()  # loss function -- cross entropy
         self.cores_loss_fun = CORESLoss(reduction='none')
         self.ldr_train, self.ldr_test = self.train_test(dataset, list(idxs))
@@ -40,12 +59,20 @@ class FedTwinLocalUpdate:
         return train, test
 
     def update_weights(self, net_p, net_glob, rounds):
+
+
+        if not self.args.noise_prior_open:
+            self.noise_prior = None
+
         # 设置本地模型和全局模型为训练模式
         net_p.train()
         net_glob.train()
 
         # 创建优化器，用于更新本地模型和全局模型的参数
         optimizer_theta = MyOptimizer(net_p.parameters(), lr=self.args.plr, lamda=self.args.lamda)
+        if self.args.nodr:
+            optimizer_theta = torch.optim.SGD(net_p.parameters(), lr=self.args.lr)
+
         # 使用 SGD 优化器更新全局模型的参数
         optimizer_w = torch.optim.SGD(net_glob.parameters(), lr=self.args.lr)
 
@@ -79,8 +106,15 @@ class FedTwinLocalUpdate:
                 log_probs_g, _ = net_glob(images)
 
                 # 计算损失
+                # 输出分别为
+                # loss_p：g模型选出来的干净样本在p上的损失
+                # loss_g：
+                # ind_g：g选出来的干净样本索引
+                # ind_noise_p：p认为的不干净样本索引
+                # ind_noise_g：g认为的不干净样本索引
+
                 loss_p, loss_g, len_loss_g, len_loss_g, ind_g, ind_noise_p, ind_noise_g \
-                    = self.loss_func(labels, log_probs_p, log_probs_g, rounds, iter, self.args)
+                    = self.loss_func(labels, log_probs_p, log_probs_g, rounds, iter, self.args, self.noise_prior)
 
                 # 如果是最后一个训练周期，保存噪声数据的索引
                 if iter == self.args.local_ep - 1:
@@ -92,18 +126,27 @@ class FedTwinLocalUpdate:
                     net_p.zero_grad()
                     if i == 0:
                         loss_p.backward()
-                        self.persionalized_model_bar, _ = optimizer_theta.step(list(net_glob.parameters()))
+                        if self.args.nodr:
+                            optimizer_theta.step()
+                        else:
+                            self.persionalized_model_bar, _ = optimizer_theta.step(list(net_glob.parameters()))
                     else:
                         log_probs_p, _ = net_p(images)
                         beta = f_beta(rounds * self.args.local_ep + iter, self.args)
-                        loss_p = self.cores_loss_fun(log_probs_p, labels, beta)
+                        if self.args.nocr:
+                            loss_p = f.cross_entropy(log_probs_p, labels, reduction='none')
+                        else:
+                            loss_p = self.cores_loss_fun(log_probs_p, labels, beta, noise_prior=self.noise_prior)
                         loss_p = torch.sum(loss_p[ind_g]) / len(loss_p[ind_g])
                         loss_p.backward()
-                        self.persionalized_model_bar, _ = optimizer_theta.step(list(net_glob.parameters()))
-
-                for new_param, localweight in zip(self.persionalized_model_bar, net_glob.parameters()):
-                    localweight.data = localweight.data - self.args.lamda * lr * (
-                            localweight.data - new_param.data)
+                        if self.args.nodr:
+                            optimizer_theta.step()
+                        else:
+                            self.persionalized_model_bar, _ = optimizer_theta.step(list(net_glob.parameters()))
+                if not self.args.nodr:
+                    for new_param, localweight in zip(self.persionalized_model_bar, net_glob.parameters()):
+                        localweight.data = localweight.data - self.args.lamda * lr * (
+                                localweight.data - new_param.data)
 
                 net_glob.zero_grad()
                 loss_g.backward()
@@ -124,3 +167,77 @@ class FedTwinLocalUpdate:
         n_bar_k = sum(n_bar_k) / len(n_bar_k)
         return net_p, net_glob.state_dict(), sum(epoch_loss) / len(
             epoch_loss), n_bar_k, local_ind_noise_p, local_ind_noise_g
+
+class FedAVGLocalUpdate:
+    def __init__(self, args, dataset=None, idxs=None):
+        self.args = args
+        self.loss_func = CrossEntropyLoss()  # loss function -- cross entropy
+        self.ldr_train, self.ldr_test = self.train_test(dataset, list(idxs))
+
+    def train_test(self, dataset, idxs):
+        # split training set, validation set and test set
+        train = DataLoader(DatasetSplit(dataset, idxs), batch_size=self.args.local_bs, shuffle=True)
+        test = DataLoader(dataset, batch_size=128)
+        return train, test
+
+    def update_weights(self, net):
+        net.train()
+        optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr)
+        epoch_loss = []
+        for iterr in range(self.args.local_ep):
+            batch_loss = []
+            for batch_idx, (images, labels, _) in enumerate(self.ldr_train):
+                images, labels = images.to(self.args.device), labels.to(self.args.device)
+                net.zero_grad()
+                outputs, _ = net(images)
+                loss = self.loss_func(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                batch_loss.append(loss.item())
+
+                if self.args.dataset == 'clothing1m':
+                    if batch_idx >= 100:
+                        break
+
+                # print("batch_loss={}".format(batch_loss))
+            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            # print("epoch_loss={}".format(epoch_loss))
+        return net.state_dict(), sum(epoch_loss) / len(epoch_loss)
+
+
+class FedAVGLocalUpdate_withCR:
+    def __init__(self, args, dataset=None, idxs=None):
+        self.args = args
+        self.loss_func = CORESLoss(reduction='none')  # loss function -- cross entropy
+        self.ldr_train, self.ldr_test = self.train_test(dataset, list(idxs))
+
+    def train_test(self, dataset, idxs):
+        # split training set, validation set and test set
+        train = DataLoader(DatasetSplit(dataset, idxs), batch_size=self.args.local_bs, shuffle=True)
+        test = DataLoader(dataset, batch_size=128)
+        return train, test
+
+    def update_weights(self, net):
+        net.train()
+        optimizer = torch.optim.SGD(net.parameters(), lr=self.args.lr)
+        epoch_loss = []
+        for iterr in range(self.args.local_ep):
+            batch_loss = []
+            for batch_idx, (images, labels, _) in enumerate(self.ldr_train):
+                images, labels = images.to(self.args.device), labels.to(self.args.device)
+                net.zero_grad()
+                outputs, _ = net(images)
+                loss = self.loss_func(outputs, labels)
+                loss = torch.sum(loss/len(loss))
+                loss.backward()
+                optimizer.step()
+                batch_loss.append(loss.item())
+
+                if self.args.dataset == 'clothing1m':
+                    if batch_idx >= 100:
+                        break
+
+                # print("batch_loss={}".format(batch_loss))
+            epoch_loss.append(sum(batch_loss) / len(batch_loss))
+            # print("epoch_loss={}".format(epoch_loss))
+        return net.state_dict(), sum(epoch_loss) / len(epoch_loss)

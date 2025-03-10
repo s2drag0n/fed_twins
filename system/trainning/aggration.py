@@ -19,3 +19,12 @@ def personalized_aggregation(net_glob, w, n_bar, gamma):
         else:
             w_agg[k] = gamma * torch.div(w_agg[k], sum(n_bar)) + (1 - gamma) * net_glob[k]
     return w_agg
+
+def aggregation(w, dict_len):
+    w_avg = copy.deepcopy(w[0])
+    for k in w_avg.keys():
+        w_avg[k] = w_avg[k] * dict_len[0]
+        for i in range(1, len(w)):
+            w_avg[k] += w[i][k] * dict_len[i]
+        w_avg[k] = w_avg[k] / sum(dict_len)
+    return w_avg
